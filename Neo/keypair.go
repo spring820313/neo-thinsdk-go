@@ -1,10 +1,9 @@
-package main
+package Neo
 
 import (
 	"crypto/elliptic"
 	"math/big"
 	"fmt"
-	"log"
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"crypto/rand"
@@ -53,72 +52,6 @@ func Verify(data, signature []byte, pubkey *ecdsa.PublicKey) bool {
 	s.SetBytes(signature[curveOrderByteSize:])
 
 	return ecdsa.Verify(pubkey, digest[:], r, s)
-}
-
-// DecompressPubkey parses a public key in the 33-byte compressed format.
-func DecompressPubkey(pubkey []byte) (*ecdsa.PublicKey, error) {
-	x, y := new(big.Int),new(big.Int)
-	if len(pubkey) != 33 {
-		return nil, fmt.Errorf("invalid public key")
-	}
-	if (pubkey[0] != 0x02) && (pubkey[0] != 0x03) {
-		return nil, fmt.Errorf("invalid public key")
-	}
-	if x == nil {
-		return nil, fmt.Errorf("invalid public key")
-	}
-	x.SetBytes(pubkey[1:])
-
-	xxx := new(big.Int).Mul(x,x)
-	xxx.Mul(xxx,x)
-
-	ax := new(big.Int).Mul(big.NewInt(3),x)
-
-	yy := new(big.Int).Sub(xxx, ax)
-	yy.Add(yy,elliptic.P256().Params().B)
-
-	y1 := new(big.Int).ModSqrt(yy,elliptic.P256().Params().P)
-	if y1 == nil {
-		return nil, fmt.Errorf("can not revcovery public key")
-	}
-
-	y2 := new(big.Int).Neg(y1)
-	y2.Mod(y2,elliptic.P256().Params().P)
-
-	if pubkey[0] == 0x02 {
-		if y1.Bit(0) == 0 {
-			y = y1
-		} else {
-			y = y2
-		}
-	} else {
-		if y1.Bit(0) == 1 {
-			y = y1
-		} else {
-			y = y2
-		}
-	}
-	//fmt.Println("dx:",x)
-	//fmt.Println("dy:",y)
-	return &ecdsa.PublicKey{X: x, Y: y, Curve: elliptic.P256()}, nil
-}
-
-// CompressPubkey encodes a public key to the 33-byte compressed format.
-func CompressPubkey(pubkey *ecdsa.PublicKey) []byte {
-	//fmt.Println("cx:",pubkey.X)
-	//fmt.Println("cy:",pubkey.Y)
-	// big.Int.Bytes() will need padding in the case of leading zero bytes
-	params := pubkey.Curve.Params()
-	curveOrderByteSize := params.P.BitLen() / 8
-	xBytes := pubkey.X.Bytes()
-	signature := make([]byte, curveOrderByteSize+1)
-	if pubkey.Y.Bit(0) == 1 {
-		signature[0] = 0x03
-	} else {
-		signature[0] = 0x02
-	}
-	copy(signature[1+curveOrderByteSize-len(xBytes):], xBytes)
-	return signature
 }
 
 
@@ -182,4 +115,30 @@ func comparePublicKey(key1, key2 *ecdsa.PublicKey) bool {
 		return false
 	}
 }
+/*
+func testCompressPublicKey() {
+	fmt.Println("--------------")
+	key, err := NewSigningKey()
+	if err != nil {
+		log.Fatal(err)
+	}
+	compressed := CompressPubkey(&key.PublicKey)
+	log.Println(compressed)
+	uncompressed,err := DecompressPubkey(compressed)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println(uncompressed)
+	result := comparePublicKey(&key.PublicKey,uncompressed)
+	if result != true {
+		log.Fatal("result does not match!")
+	}
 
+}
+
+func main() {
+
+	testCompressPublicKey()
+}
+
+*/
