@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"crypto/elliptic"
 	"crypto/sha256"
-	"test/crypto/ripemd160"
+	"crypto/ripemd160"
 )
 
 type Point struct {
@@ -42,7 +42,16 @@ func PrivateFromBytes(priv *ecdsa.PrivateKey, b []byte) (err error) {
 }
 
 func PrivateToWIF(priv *ecdsa.PrivateKey) (wif string) {
+	/*
 	priv_bytes := PrivateToBytes(priv)
+	priv_bytes = append(priv_bytes, NEO_PRIVATE_SENTINEL)
+	wif = b58checkencode(NEO_PRIVATE_VERSION, priv_bytes)
+	*/
+
+	priv_bytes := make([]byte, 33)
+	d := priv.D.Bytes()
+	copy(priv_bytes[0:32], d)
+	priv_bytes[32] = 0x01
 	wif = b58checkencode(NEO_PRIVATE_VERSION, priv_bytes)
 
 	return wif
@@ -133,6 +142,7 @@ func CompressPubkey(pubkey *ecdsa.PublicKey) []byte {
 	//fmt.Println("cx:",pubkey.X)
 	//fmt.Println("cy:",pubkey.Y)
 	// big.Int.Bytes() will need padding in the case of leading zero bytes
+	/*
 	params := pubkey.Curve.Params()
 	curveOrderByteSize := params.P.BitLen() / 8
 	xBytes := pubkey.X.Bytes()
@@ -144,28 +154,19 @@ func CompressPubkey(pubkey *ecdsa.PublicKey) []byte {
 	}
 	copy(signature[1+curveOrderByteSize-len(xBytes):], xBytes)
 	return signature
+	*/
+	data := make([]byte, 33)
+	if pubkey.Y.Bit(0) == 0 {
+		data[0] = 0x02
+	} else {
+		data[0] = 0x03
+	}
+	copy(data[1:], pubkey.X.Bytes())
+	return data
 }
 
 func PublicToAddress(pubkey *ecdsa.PublicKey) (address string)  {
-	/* Convert the public key to bytes */
-	pub_bytes := CompressPubkey(pubkey)
-
-	/* SHA256 Hash */
-	sha256_h := sha256.New()
-	sha256_h.Reset()
-	sha256_h.Write(pub_bytes)
-	pub_hash_1 := sha256_h.Sum(nil)
-
-	/* RIPEMD-160 Hash */
-	ripemd160_h := ripemd160.New()
-	ripemd160_h.Reset()
-	ripemd160_h.Write(pub_hash_1)
-	pub_hash_2 := ripemd160_h.Sum(nil)
-
-	/* Convert hash bytes to base58 check encoded sequence */
-	address = b58checkencode(NEO_ADDRESS_VERSION, pub_hash_2)
-
-	return address
+	return getAddressFromPublicKey(pubkey)
 }
 
 func getScriptFromPublicKey(pubkey *ecdsa.PublicKey) ( []byte)  {

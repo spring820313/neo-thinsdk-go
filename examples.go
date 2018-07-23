@@ -2,15 +2,15 @@ package main
 
 import (
 	"github.com/neo-thinsdk-go/Neo"
-	"crypto/ecdsa"
 	"math/big"
+	"crypto/ecdsa"
 )
 
 func NeoTransfer() (string, bool) {
 	params := &Neo.CreateSignParams{}
 	params.Version = 1
-	params.PriKey = "KxQvp9esz3r13Zgki2pE8STxMrJ8nyAaN9uHcxEttbXNkWzKxf3z"
-	params.From = "ANCMUhUuS5v5FGjb2eBXTCUtChbxNPZZgn"
+	params.PriKey = "L4RmQvd6PVzBTgYLpYagknNjhZxsHBbJq4ky7Zd3vB7AguSM7gF1"
+	params.From = "ARbjp1wPh5XJchZpSjqHzGVQnnpTxNR1x7"
 	params.To = "APxpKoFCfBk8RjkRdKwyUnsBntDRXLYAZc"
 	params.AssetId = "c56f33fc6ecfcd0c225c4ab356fee59390af8560be0e930faebe74a6daff7c9b"
 	params.Value = 100000000
@@ -33,14 +33,14 @@ func NeoTransfer() (string, bool) {
 func Nep5Transfer() (string, bool)  {
 	params := &Neo.CreateSignParams{}
 	params.Version = 1
-	params.PriKey = "KxQvp9esz3r13Zgki2pE8STxMrJ8nyAaN9uHcxEttbXNkWzKxf3z"
-	params.From = "ANCMUhUuS5v5FGjb2eBXTCUtChbxNPZZgn"
-	params.To = "ANCMUhUuS5v5FGjb2eBXTCUtChbxNPZZgn"
+	params.PriKey = "L4RmQvd6PVzBTgYLpYagknNjhZxsHBbJq4ky7Zd3vB7AguSM7gF1"
+	params.From = "ARbjp1wPh5XJchZpSjqHzGVQnnpTxNR1x7"
+	params.To = "ARbjp1wPh5XJchZpSjqHzGVQnnpTxNR1x7"
 	params.AssetId = "602c79718b16e442de58778e148d0b1084e3b2dffd5de6b7b16cee7969282de7"
 	params.Value = 0
 
 	var value = big.NewInt(100000000)
-	data, _ := Neo.GetNep5Transfer("c88acaae8a0362cdbdedddf0083c452a3a8bb7b8", "ANCMUhUuS5v5FGjb2eBXTCUtChbxNPZZgn", "APxpKoFCfBk8RjkRdKwyUnsBntDRXLYAZc", *value)
+	data, _ := Neo.GetNep5Transfer("c88acaae8a0362cdbdedddf0083c452a3a8bb7b8", "ARbjp1wPh5XJchZpSjqHzGVQnnpTxNR1x7", "APxpKoFCfBk8RjkRdKwyUnsBntDRXLYAZc", *value)
 	params.Data = data
 
 	utxoList := []Neo.Utxo{}
@@ -60,13 +60,19 @@ func Nep5Transfer() (string, bool)  {
 
 func main()  {
 	priv, _ := Neo.NewSigningKey()
-	pub := priv.Public()
+	wif := Neo.PrivateToWIF(priv)
+	println(wif)
 
-	pubx := pub.(*ecdsa.PublicKey)
-	address := Neo.PublicToAddress(pubx)
+	address := Neo.PublicToAddress(&priv.PublicKey)
 	println(address)
 
-	//NeoTransfer()
+	//ARbjp1wPh5XJchZpSjqHzGVQnnpTxNR1x7
+	priv2 := &ecdsa.PrivateKey{}
+	Neo.FromWIF(priv2,"L4RmQvd6PVzBTgYLpYagknNjhZxsHBbJq4ky7Zd3vB7AguSM7gF1")
+	address2 := Neo.PublicToAddress(&priv2.PublicKey)
+	println(address2)
 
-	Nep5Transfer()
+	NeoTransfer()
+
+	//Nep5Transfer()
 }
